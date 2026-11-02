@@ -2,13 +2,13 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     DateTime,
     Float,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     Text,
 )
