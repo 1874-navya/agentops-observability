@@ -15,9 +15,9 @@ class SpanIn(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     ended_at: datetime | None = None
     duration_ms: float | None = Field(default=None, ge=0)
-    input_tokens: int = Field(default=0, ge=0)
-    output_tokens: int = Field(default=0, ge=0)
-    total_tokens: int = Field(default=0, ge=0)
+    input_tokens: int = Field(default=0, ge=0, le=2_147_483_647)
+    output_tokens: int = Field(default=0, ge=0, le=2_147_483_647)
+    total_tokens: int = Field(default=0, ge=0, le=2_147_483_647)
     model: str | None = Field(default=None, max_length=128)
     provider: str | None = Field(default=None, max_length=128)
     error_type: str | None = Field(default=None, max_length=255)
@@ -35,9 +35,9 @@ class TraceIn(BaseModel):
     started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     ended_at: datetime | None = None
     duration_ms: float | None = Field(default=None, ge=0)
-    input_tokens: int = Field(default=0, ge=0)
-    output_tokens: int = Field(default=0, ge=0)
-    total_tokens: int = Field(default=0, ge=0)
+    input_tokens: int = Field(default=0, ge=0, le=2_147_483_647)
+    output_tokens: int = Field(default=0, ge=0, le=2_147_483_647)
+    total_tokens: int = Field(default=0, ge=0, le=2_147_483_647)
     metadata: dict[str, Any] = Field(default_factory=dict)
     spans: list[SpanIn] = Field(default_factory=list, max_length=2000)
 
@@ -46,12 +46,9 @@ class TraceIn(BaseModel):
         ids = [span.span_id for span in self.spans]
         if len(ids) != len(set(ids)):
             raise ValueError("span_id values must be unique within a trace")
-        known = set(ids)
         for span in self.spans:
             if span.parent_span_id == span.span_id:
                 raise ValueError("a span cannot be its own parent")
-            if span.parent_span_id and span.parent_span_id not in known:
-                raise ValueError(f"unknown parent_span_id: {span.parent_span_id}")
         return self
 
 

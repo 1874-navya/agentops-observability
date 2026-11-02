@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agentops import __version__
-from agentops.api.routes import analytics, health, traces
+from agentops.api.routes import analytics, health, otlp, traces
 from agentops.core.config import get_settings
 
 settings = get_settings()
@@ -16,8 +16,9 @@ app.add_middleware(
     allow_origins=settings.cors_origin_list,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-API-Key"],
+    allow_headers=["Content-Type", "Content-Encoding", "X-API-Key"],
 )
 app.include_router(health.router)
 app.include_router(traces.router)
 app.include_router(analytics.router)
+app.include_router(otlp.router)

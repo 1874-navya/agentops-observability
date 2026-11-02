@@ -7,11 +7,11 @@ An open-source observability platform for agentic AI applications. Ingest traces
 ```text
 Agent applications
   ├─ AgentOps instrumentation helpers
-  ├─ OpenTelemetry SDK + OTLP exporter
+  ├─ OpenTelemetry SDK + OTLP/HTTP exporter
   └─ MLflow tracing adapter (optional)
           |
           v
-    FastAPI ingestion API
+   FastAPI OTLP + JSON ingestion
           |
           v
  PostgreSQL traces + spans
@@ -33,10 +33,11 @@ docker compose up --build
 - Liveness: http://localhost:8000/health
 - Readiness: http://localhost:8000/ready
 - Dashboard: http://localhost:8501
+- OTLP traces: http://localhost:8000/v1/traces
 
 The API container runs the Alembic migrations before starting FastAPI.
 
-## Ingest a trace
+## Ingest a trace with JSON
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/traces \
@@ -57,6 +58,34 @@ curl -X POST http://localhost:8000/api/v1/traces \
   }'
 ```
 
+## Export OpenTelemetry spans directly
+
+Install the optional integration and configure the HTTP exporter to point at the AgentOps OTLP endpoint. Include the API key as an exporter header:
+
+```python
+import os
+
+from agentops.integrations.opentelemetry import configure_otel
+from agentops.instrumentation.spans import agent_span, llm_span, tool_span
+
+provider = configure_otel(
+    service_name="demo-agent",
+    traces_endpoint="http://localhost:8000/v1/traces",
+    headers={"X-API-Key": os.environ["AGENTOPS_API_KEY"]},
+)
+
+with agent_span("agent.run", agent_name="demo-agent"):
+    with tool_span("knowledge.search", tool_name="search"):
+        pass
+    with llm_span("demo-model", provider="demo", input_tokens=40, output_tokens=12):
+        pass
+
+provider.force_flush()
+provider.shutdown()
+```
+
+The OTLP HTTP receiver accepts binary Protobuf trace requests, supports gzip request encoding, enforces a 64 MiB request/decompressed-body limit, filters sensitive attribute keys, and persists each export transactionally. The receiver currently supports the OTLP traces signal over HTTP; it does not implement OTLP gRPC, metrics, or logs.
+
 ## Development
 
 ```bash
@@ -70,19 +99,9 @@ pytest
 ruff check .
 ```
 
-## Optional instrumentation
+## MLflow
 
-```python
-from agentops.instrumentation.spans import agent_span, tool_span, llm_span
-
-with agent_span("planner", agent_name="support"):
-    with tool_span("knowledge_search", tool_name="search"):
-        ...
-    with llm_span("my-model", provider="my-provider", input_tokens=120, output_tokens=60):
-        ...
-```
-
-Configure OTLP export with `configure_otel(service_name="my-agent", traces_endpoint="http://localhost:4318/v1/traces")` from `agentops.integrations.opentelemetry`. MLflow spans are available through `mlflow_span` from `agentops.integrations.mlflow`.
+MLflow spans are available through `mlflow_span` from `agentops.integrations.mlflow`. It uses MLflow's fluent `start_span` API and remains an optional dependency.
 
 ## Current scope
 
@@ -91,18 +110,19 @@ Configure OTLP export with `configure_otel(service_name="my-agent", traces_endpo
 - [x] PostgreSQL models and Alembic initial migration
 - [x] Transactional batch ingestion and trace upserts
 - [x] Token and latency overview analytics
+- [x] Native OTLP/HTTP binary Protobuf trace receiver
 - [x] OpenTelemetry instrumentation helpers and OTLP exporter setup
 - [x] MLflow tracing span adapter
 - [x] Streamlit trace dashboard
 - [x] Docker Compose and GitHub Actions CI
-- [x] Unit and API integration tests
-- [ ] OTLP receiver/collector pipeline into AgentOps persistence
+- [x] Unit, API integration, and OTLP receiver tests
+- [ ] OTLP gRPC, metrics, and logs
 - [ ] advanced filtering, cost attribution, retention, and alerting
 - [ ] production auth scopes, quotas, and performance benchmarks
 
 ## Security
 
-Never commit `.env` or send secrets, raw prompts, completions, or sensitive customer data in trace attributes. The Compose setup is for local development; harden authentication, TLS, rate limits, secret management, backups, and retention before public production deployment.
+Never commit `.env` or send secrets, raw prompts, completions, or sensitive customer data in trace attributes. The receiver filters common sensitive attribute-key patterns, but application owners remain responsible for data minimization. The Compose setup is for local development; harden authentication, TLS, rate limits, secret management, backups, and retention before public production deployment.
 
 ## License
 

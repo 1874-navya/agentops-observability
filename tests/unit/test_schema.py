@@ -27,10 +27,10 @@ def test_duplicate_span_ids_are_rejected():
         )
 
 
-def test_unknown_parent_span_is_rejected():
-    with pytest.raises(ValidationError):
-        TraceIn(
-            trace_id="t1",
-            name="agent",
-            spans=[{"span_id": "child", "parent_span_id": "missing", "name": "tool"}],
-        )
+def test_parent_span_can_be_external_to_this_payload():
+    trace = TraceIn(
+        trace_id="t1",
+        name="agent",
+        spans=[{"span_id": "child", "parent_span_id": "upstream-parent", "name": "tool"}],
+    )
+    assert trace.spans[0].parent_span_id == "upstream-parent"
