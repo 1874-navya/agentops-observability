@@ -1,4 +1,3 @@
-import gzip
 import zlib
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -79,7 +78,11 @@ def _span_to_model(span: Any) -> SpanIn:
     attributes = _attributes_to_dict(span.attributes)
     kind_value = attributes.get("agentops.operation.kind")
     allowed_kinds = {"agent", "tool", "llm", "retrieval", "chain", "custom"}
-    kind = kind_value if kind_value in allowed_kinds else "custom"
+    kind = (
+        kind_value
+        if isinstance(kind_value, str) and kind_value in allowed_kinds
+        else "custom"
+    )
 
     started_at = _timestamp(span.start_time_unix_nano) or datetime.now(UTC)
     ended_at = _timestamp(span.end_time_unix_nano)
@@ -107,8 +110,16 @@ def _span_to_model(span: Any) -> SpanIn:
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         total_tokens=input_tokens + output_tokens,
-        model=attributes.get("gen_ai.request.model"),
-        provider=attributes.get("gen_ai.system"),
+        model=(
+            str(attributes["gen_ai.request.model"])[:128]
+            if attributes.get("gen_ai.request.model") is not None
+            else None
+        ),
+        provider=(
+            str(attributes["gen_ai.system"])[:128]
+            if attributes.get("gen_ai.system") is not None
+            else None
+        ),
         error_type=attributes.get("exception.type"),
         # Exception messages and stack traces are intentionally not persisted.
         attributes=attributes,
@@ -212,7 +223,10 @@ async def receive_otlp_traces(
     except (ValueError, ValidationError) as exc:
         raise HTTPException(status_code=400, detail=f"Invalid OTLP trace payload: {exc}") from exc
     except Exception as exc:
-        raise HTTPException(status_code=400, detail="Unable to decode OTLP Protobuf request") from exc
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to decode OTLP Protobuf request",
+        ) from exc
 
     try:
         accepted_spans = 0

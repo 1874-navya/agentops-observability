@@ -2,8 +2,8 @@
 
 import os
 
-from agentops.integrations.opentelemetry import configure_otel
 from agentops.instrumentation.spans import agent_span, llm_span, tool_span
+from agentops.integrations.opentelemetry import configure_otel
 
 
 def main() -> None:
