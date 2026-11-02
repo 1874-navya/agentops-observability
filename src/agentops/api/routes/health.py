@@ -13,6 +13,6 @@ def health():
 
 
 @router.get("/ready")
-def ready(session: Session = Depends(get_session)):
+def ready(session: Session = Depends(get_session)):  # noqa: B008
     session.execute(text("SELECT 1"))
     return {"status": "ready", "database": "ok"}

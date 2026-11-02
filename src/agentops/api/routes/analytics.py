@@ -13,5 +13,5 @@ router = APIRouter(
 
 
 @router.get("/overview")
-def get_overview(session: Session = Depends(get_session)):
+def get_overview(session: Session = Depends(get_session)):  # noqa: B008
     return overview(session)

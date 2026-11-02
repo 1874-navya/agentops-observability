@@ -16,13 +16,17 @@ router = APIRouter(
 
 
 @router.post("", response_model=IngestResult)
-def ingest_trace(payload: TraceIn, session: Session = Depends(get_session)):
+def ingest_trace(
+    payload: TraceIn, session: Session = Depends(get_session)  # noqa: B008
+):
     created = persist_trace(session, payload)
     return IngestResult(trace_id=payload.trace_id, span_count=len(payload.spans), created=created)
 
 
 @router.post("/batch", response_model=list[IngestResult])
-def ingest_batch(payload: TraceBatchIn, session: Session = Depends(get_session)):
+def ingest_batch(
+    payload: TraceBatchIn, session: Session = Depends(get_session)  # noqa: B008
+):
     results = []
     try:
         for trace in payload.traces:
@@ -40,7 +44,7 @@ def ingest_batch(payload: TraceBatchIn, session: Session = Depends(get_session))
 @router.get("", response_model=list[TraceOut])
 def list_traces(
     limit: int = Query(default=50, ge=1, le=500),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session),  # noqa: B008
 ):
     query = (
         select(Trace)
@@ -52,7 +56,9 @@ def list_traces(
 
 
 @router.get("/{trace_id}", response_model=TraceOut)
-def get_trace(trace_id: str, session: Session = Depends(get_session)):
+def get_trace(
+    trace_id: str, session: Session = Depends(get_session)  # noqa: B008
+):
     trace = session.scalar(
         select(Trace).options(selectinload(Trace.spans)).where(Trace.id == trace_id)
     )

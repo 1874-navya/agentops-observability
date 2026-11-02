@@ -21,7 +21,9 @@ class Settings(BaseSettings):
     def reject_insecure_production_key(self):
         if self.app_env.lower() == "production":
             if len(self.agentops_api_key.get_secret_value()) < 32:
-                raise ValueError("AGENTOPS_API_KEY must contain at least 32 characters in production")
+                raise ValueError(
+                    "AGENTOPS_API_KEY must contain at least 32 characters in production"
+                )
         return self
 
 

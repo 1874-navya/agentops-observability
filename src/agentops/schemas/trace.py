@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -12,7 +12,7 @@ class SpanIn(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     kind: Literal["agent", "tool", "llm", "retrieval", "chain", "custom"] = "custom"
     status: Literal["unset", "ok", "error"] = "unset"
-    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     ended_at: datetime | None = None
     duration_ms: float | None = Field(default=None, ge=0)
     input_tokens: int = Field(default=0, ge=0)
@@ -32,7 +32,7 @@ class TraceIn(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     agent_name: str | None = Field(default=None, max_length=255)
     status: Literal["unset", "ok", "error"] = "unset"
-    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     ended_at: datetime | None = None
     duration_ms: float | None = Field(default=None, ge=0)
     input_tokens: int = Field(default=0, ge=0)

@@ -1,6 +1,6 @@
 """Initial trace and span storage."""
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 revision = "0001_initial"
 down_revision = None
@@ -28,7 +28,12 @@ def upgrade() -> None:
     op.create_index("ix_traces_status_started", "traces", ["status", "started_at"])
     op.create_table(
         "spans",
-        sa.Column("trace_id", sa.String(64), sa.ForeignKey("traces.id", ondelete="CASCADE"), primary_key=True),
+        sa.Column(
+            "trace_id",
+            sa.String(64),
+            sa.ForeignKey("traces.id", ondelete="CASCADE"),
+            primary_key=True,
+        ),
         sa.Column("span_id", sa.String(64), primary_key=True),
         sa.Column("parent_span_id", sa.String(64)),
         sa.Column("name", sa.String(255), nullable=False),
